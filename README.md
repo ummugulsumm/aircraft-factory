@@ -3,18 +3,14 @@
 Bu proje, uçak parçaları ve uçak üretim süreçlerinin yönetimi için geliştirilmiş bir web uygulamasıdır.
 
 ## 📌 İçindekiler
-- [Özellikler](#ozellikler)
-  - [Personel ve Takım Yönetimi](#personel-ve-takim-yonetimi)
-  - [Parça Yönetimi](#parca-yonetimi)
-  - [Uçak Montaj Sistemi](#ucak-montaj-sistemi)
-  - [Envanter Takibi](#envanter-takibi)
-- [Ekran Görüntüleri](#ekran-goruntuleri)
-- [Teknolojiler](#teknolojiler)
-- [Kurulum](#kurulum)
-  - [Ortam Değişkenleri](#ortam-degiskenleri)
+- [Özellikler](#-özellikler)
+- [Ekran Görüntüleri](#-ekran-görüntüleri)
+- [Teknolojiler](#-teknolojiler)
+- [Kurulum](#-kurulum)
+  - [Ortam Değişkenleri](#ortam-değişkenleri)
   - [Docker ile Kurulum](#docker-ile-kurulum)
   - [Manuel Kurulum](#manuel-kurulum)
-- [API Dokümantasyonu](#api-dokumantasyonu)
+- [API Dokümantasyonu](#-api-dokümantasyonu)
 
 ## 🚀 Özellikler
 
@@ -47,7 +43,7 @@ Bu proje, uçak parçaları ve uçak üretim süreçlerinin yönetimi için geli
 ![Ana Sayfa](screenshots/home.PNG)
 ![Parça Listesi](screenshots/parts-list.PNG)
 ![Uçak Listesi](screenshots/aircraft-list.PNG)
-![Eksik Parça Hatası](screenshots/missing_required_part_error.png)
+![Eksik Parça Hatası](screenshots/missing_required_part_error.PNG)
 
 ## 🛠 Teknolojiler
 
