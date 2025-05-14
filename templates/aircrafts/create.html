@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+
+{% block title %}Create Aircraft - Aircraft Factory{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Create New Aircraft</h4>
+                <a href="{% url 'web:aircrafts_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="aircraft_type" class="form-label">Aircraft Type</label>
+                        <select class="form-select" id="aircraft_type" name="aircraft_type" required>
+                            <option value="">Select a type...</option>
+                        </select>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Aircraft
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Load aircraft types
+        $.get("{% url 'aircrafts:aircraft-type-list' %}", function(types) {
+            const select = $('#aircraft_type');
+            types.forEach(function(type) {
+                select.append($('<option>', {
+                    value: type.id,
+                    text: type.name
+                }));
+            });
+        });
+
+        $('form').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: "{% url 'aircrafts:aircraft-list' %}",
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    aircraft_type: parseInt($('#aircraft_type').val())
+                }),
+                success: function(response) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Aircraft created successfully',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then((result) => {
+                        window.location.href = "{% url 'web:aircrafts_list' %}";
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = '';
+                    let errorTitle = 'Error';
+                    let errorHtml = '';
+                    
+                    if (xhr.responseJSON) {
+                        if (xhr.responseJSON.detail && xhr.responseJSON.detail.includes('Missing required parts:')) {
+                            errorTitle = 'Missing Required Parts';
+                            const parts = xhr.responseJSON.detail.replace('Missing required parts: ', '').split(', ');
+                            errorHtml = `
+                                <div class="text-left">
+                                    <p>The following parts are required but not available:</p>
+                                    <ul>
+                                        ${parts.map(part => `<li>${part}</li>`).join('')}
+                                    </ul>
+                                    <p>Please ensure all required parts are available before creating the aircraft.</p>
+                                </div>
+                            `;
+                        } else if (xhr.responseJSON.non_field_errors) {
+                            errorMessage = xhr.responseJSON.non_field_errors.join('\n');
+                        } else if (xhr.responseJSON.detail) {
+                            errorMessage = xhr.responseJSON.detail;
+                        } else {
+                            Object.keys(xhr.responseJSON).forEach(function(key) {
+                                errorMessage += `${key}: ${xhr.responseJSON[key].join('\n')}\n`;
+                            });
+                        }
+                    } else {
+                        errorMessage = 'An error occurred while creating the aircraft';
+                    }
+                    
+                    Swal.fire({
+                        title: errorTitle,
+                        html: errorHtml || errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

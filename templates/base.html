@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Aircraft Factory{% endblock %}</title>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const token = localStorage.getItem('access_token');
+        const isLoginPage = window.location.pathname === "{% url 'web:login' %}";
+        
+        if (!token && !isLoginPage) {
+            window.location.href = "{% url 'web:login' %}";
+        }
+    </script>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'web:home' %}">
+                <i class="fas fa-plane"></i> Aircraft Factory
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item" id="aircraftMenu">
+                        <a class="nav-link" href="{% url 'web:aircrafts_list' %}">
+                            <i class="fas fa-plane"></i> Aircraft
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'web:aircrafts_list' %}">List Aircraft</a></li>
+                            <li id="createAircraftLink"><a class="dropdown-item" href="{% url 'web:aircraft_create' %}">Create Aircraft</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" id="partsMenu">
+                        <a class="nav-link" href="{% url 'web:parts_list' %}">
+                            <i class="fas fa-cogs"></i> Parts
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'web:parts_list' %}">List Parts</a></li>
+                            <li id="createPartLink"><a class="dropdown-item" href="{% url 'web:part_create' %}">Create Part</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown" id="userMenu">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> <span id="username">User</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="logoutLink">Logout</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" id="loginMenu">
+                        <a class="nav-link" href="{% url 'web:login' %}">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">© 2024 Aircraft Factory. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <script>
+    function checkAuth() {
+        const token = localStorage.getItem('access_token');
+        const isLoginPage = window.location.pathname === "{% url 'web:login' %}";
+
+        if (token) {
+            $.ajax({
+                url: "{% url 'accounts:profile' %}",
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                success: function(data) {
+                    $('#username').text(data.username);
+                    $('#userMenu').show();
+                    $('#loginMenu').hide();
+                },
+                error: function() {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    $('#userMenu').hide();
+                    $('#loginMenu').show();
+                }
+            });
+        } else {
+            $('#userMenu').hide();
+            $('#loginMenu').show();
+            
+            if (!isLoginPage) {
+                window.location.href = "{% url 'web:login' %}";
+            }
+        }
+    }
+
+    $.ajaxSetup({
+        beforeSend: function(xhr) {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            }
+        }
+    });
+
+    $('#logoutLink').click(function(e) {
+        e.preventDefault();
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = "{% url 'web:login' %}";
+    });
+
+    checkAuth();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

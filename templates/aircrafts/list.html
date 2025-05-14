@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Aircraft List - Aircraft Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Aircraft List</h5>
+                    <button type="button" class="btn btn-primary" id="newAircraftBtn">
+                        <i class="fas fa-plus"></i> New Aircraft
+                    </button>
+                </div>
+                <div class="card-body">
+                    <table id="aircraftTable" class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Serial Number</th>
+                                <th>Type</th>
+                                <th>Parts Used</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    function format(d) {
+        if (d.used_parts.length === 0) {
+            return '<div class="p-3">No parts assigned to this aircraft yet.</div>';
+        }
+
+        let partsHtml = '<div class="table-responsive p-3"><table class="table table-sm">' +
+            '<thead><tr>' +
+            '<th>Part Serial Number</th>' +
+            '<th>Part Type</th>' +
+            '<th>Used At</th>' +
+            '</tr></thead><tbody>';
+        
+        d.used_parts.forEach(function(part) {
+            partsHtml += `
+                <tr>
+                    <td>${part.part.serial_number}</td>
+                    <td>${part.part.part_type_display}</td>
+                    <td>${new Date(part.created_at).toLocaleString()}</td>
+                </tr>
+            `;
+        });
+        
+        partsHtml += '</tbody></table></div>';
+        return partsHtml;
+    }
+
+    var table = $('#aircraftTable').DataTable({
+        ajax: {
+            url: "{% url 'aircrafts:aircraft-list' %}",
+            dataSrc: '',
+            error: function(xhr) {
+                if (xhr.status === 403) {
+                    $('#aircraftTable tbody').html(`
+                        <tr>
+                            <td colspan="5" class="text-center p-3">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Aircraft list is only accessible by assembly team members.
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                    $('#newAircraftBtn').hide();
+                }
+            }
+        },
+        columns: [
+            {
+                className: 'details-control',
+                orderable: false,
+                data: null,
+                defaultContent: '<i class="fas fa-plus-circle text-primary"></i>',
+                width: '30px'
+            },
+            { 
+                data: 'serial_number',
+                render: function(data) {
+                    return data;
+                }
+            },
+            { data: 'aircraft_type_display' },
+            { 
+                data: 'used_parts',
+                render: function(data) {
+                    return `${data.length} parts`;
+                }
+            },
+            { 
+                data: 'created_at',
+                render: function(data) {
+                    return new Date(data).toLocaleString();
+                }
+            }
+        ],
+        order: [[4, 'desc']]
+    });
+
+    $('#aircraftTable tbody').on('click', 'td.details-control', function() {
+        var tr = $(this).closest('tr');
+        var row = table.row(tr);
+        var icon = $(this).find('i');
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            tr.removeClass('shown');
+            icon.removeClass('fa-minus-circle').addClass('fa-plus-circle');
+        } else {
+            row.child(format(row.data())).show();
+            tr.addClass('shown');
+            icon.removeClass('fa-plus-circle').addClass('fa-minus-circle');
+        }
+    });
+
+    $('#newAircraftBtn').click(function() {
+        window.location.href = "{% url 'web:aircraft_create' %}";
+    });
+});
+</script>
+
+<style>
+td.details-control {
+    cursor: pointer;
+}
+tr.shown td.details-control i {
+    color: #dc3545 !important;
+}
+.table > tbody > tr > td {
+    vertical-align: middle;
+}
+</style>
+{% endblock %} 

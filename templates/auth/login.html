@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Aircraft Factory{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Login</h3>
+                </div>
+                <div class="card-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="loginUsername" name="username" autocomplete="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" name="password" autocomplete="current-password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {    
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        window.location.replace('/');
+        return;
+    }
+
+    const $form = $('#loginForm');
+    const $username = $('#loginUsername');
+    const $password = $('#loginPassword');
+    
+    $form.on('submit', function(e) {
+        e.preventDefault();
+        
+        const usernameValue = $username.val().trim();
+        const passwordValue = $password.val().trim();
+        
+        const formData = {
+            username: usernameValue,
+            password: passwordValue
+        };
+        
+        if (!formData.username || !formData.password) {
+            Swal.fire({
+                title: 'Error',
+                text: 'Username and password are required',
+                icon: 'error'
+            });
+            return;
+        }
+        
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalText = submitBtn.text();
+        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
+        
+        $.ajax({
+            url: "{% url 'accounts:login' %}",
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                if (response.access && response.refresh) {
+                    localStorage.setItem('access_token', response.access);
+                    localStorage.setItem('refresh_token', response.refresh);
+                    
+                    $.ajax({
+                        url: "{% url 'accounts:profile' %}",
+                        headers: {
+                            'Authorization': `Bearer ${response.access}`
+                        },
+                        success: function(userData) {
+                            window.location.href = "{% url 'web:home' %}";
+                        },
+                        error: function() {
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'Authentication failed after login',
+                                icon: 'error'
+                            });
+                            localStorage.removeItem('access_token');
+                            localStorage.removeItem('refresh_token');
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Invalid response from server',
+                        icon: 'error'
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Login error:', xhr.responseJSON);
+                
+                Swal.fire({
+                    title: 'Error',
+                    text: xhr.responseJSON?.detail || 'Login failed. Please check your credentials.',
+                    icon: 'error'
+                });
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

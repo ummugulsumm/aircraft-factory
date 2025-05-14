@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Part - Aircraft Factory{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Create New Part</h4>
+                    <a href="{% url 'web:parts_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form id="createPartForm">
+                        <div class="mb-3">
+                            <label for="part_type" class="form-label">Part Type</label>
+                            <select class="form-select" id="part_type" name="part_type" required>
+                                <option value="">Select a type...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="aircraft_type" class="form-label">Aircraft Type</label>
+                            <select class="form-select" id="aircraft_type" name="aircraft_type" required>
+                                <option value="">Select an aircraft type...</option>
+                            </select>
+                        </div>
+                        <div class="alert alert-danger d-none" id="errorMessage"></div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Part
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $.get("{% url 'parts:part-type-list' %}", function(data) {
+        const select = $('#part_type');
+        data.forEach(function(type) {
+            select.append(new Option(type.name, type.id));
+        });
+    });
+
+    $.get("{% url 'aircrafts:aircraft-type-list' %}", function(data) {
+        const select = $('#aircraft_type');
+        data.forEach(function(type) {
+            select.append(new Option(type.name, type.id));
+        });
+    });
+
+    $('#createPartForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const partType = $('#part_type').val();
+        const aircraftType = $('#aircraft_type').val();
+        
+        if (!partType || !aircraftType) {
+            Swal.fire({
+                title: 'Missing Fields',
+                text: 'Please select both part type and aircraft type',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        $.ajax({
+            url: "{% url 'parts:part-list-create' %}",
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                part_type: parseInt(partType),
+                aircraft_type: parseInt(aircraftType)
+            }),
+            success: function(response) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Part created successfully',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    window.location.href = "{% url 'web:parts_list' %}";
+                });
+            },
+            error: function(xhr) {
+                let errorMessage = '';
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.non_field_errors) {
+                        errorMessage = xhr.responseJSON.non_field_errors.join('\n');
+                    } else if (xhr.responseJSON.detail) {
+                        errorMessage = xhr.responseJSON.detail;
+                    } else {
+                        Object.keys(xhr.responseJSON).forEach(function(key) {
+                            errorMessage += `${key}: ${xhr.responseJSON[key].join('\n')}\n`;
+                        });
+                    }
+                } else {
+                    errorMessage = 'An error occurred while creating the part';
+                }
+                
+                Swal.fire({
+                    title: 'Error',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

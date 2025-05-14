@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Aircraft Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle text-warning"></i> 
+                        Inventory Alerts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="inventoryAlerts">
+                        <div class="placeholder-glow">
+                            <p class="placeholder col-12"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Aircraft List</h5>
+                    <a href="{% url 'web:aircrafts_list' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Create New
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table" id="recentAircraftTable">
+                            <thead>
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Parts List -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Parts Inventory</h5>
+                    <a href="{% url 'web:parts_list' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Create New
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table" id="partsInventoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Part Type</th>
+                                    <th>Aircraft Type</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getStatusClasses(status) {
+    switch(status) {
+        case 3: 
+            return {
+                textClass: 'text-danger',
+                bgClass: 'bg-danger',
+                icon: 'exclamation-circle'
+            };
+        case 1: 
+        case 2: 
+            return {
+                textClass: 'text-warning',
+                bgClass: 'bg-warning',
+                icon: 'exclamation-triangle'
+            };
+        default: 
+            return {
+                textClass: 'text-success',
+                bgClass: 'bg-success',
+                icon: 'check-circle'
+            };
+    }
+}
+
+function updateInventoryAlerts() {
+    $.get("{% url 'parts:inventory-summary' %}", function(data) {
+        const alertsDiv = $('#inventoryAlerts');
+        let lowStockItems = [];
+        
+
+        Object.entries(data).forEach(([aircraftType, parts]) => {
+            Object.entries(parts).forEach(([partType, info]) => {
+                if (info.status > 0) { 
+                    lowStockItems.push({
+                        part_type: partType,
+                        aircraft_type: aircraftType,
+                        quantity: info.quantity,
+                        status: info.status,
+                        status_display: info.status_display
+                    });
+                }
+            });
+        });
+        
+        if (lowStockItems.length === 0) {
+            alertsDiv.html(`
+                <div class="alert alert-success mb-0">
+                    <i class="fas fa-check-circle"></i> All parts are in adequate stock.
+                </div>
+            `);
+            return;
+        }
+        
+        let alertHtml = '<div class="alert alert-warning mb-0"><ul class="mb-0">';
+        
+        lowStockItems.forEach(item => {
+            const classes = getStatusClasses(item.status);
+            
+            alertHtml += `
+                <li>
+                    <i class="fas fa-${classes.icon} ${classes.textClass}"></i>
+                    <strong>${item.part_type}</strong> for ${item.aircraft_type}:
+                    <span class="${classes.textClass}">${item.status_display}</span>
+                    (${item.quantity} remaining)
+                </li>
+            `;
+        });
+        
+        alertHtml += '</ul></div>';
+        alertsDiv.html(alertHtml);
+    });
+}
+
+function updatePartsInventory() {
+    $.get("{% url 'parts:inventory-summary' %}", function(data) {
+        const tbody = $('#partsInventoryTable tbody');
+        tbody.empty();
+        let rows = [];
+        
+        Object.entries(data).forEach(([aircraftType, parts]) => {
+            Object.entries(parts).forEach(([partType, info]) => {
+                const classes = getStatusClasses(info.status);
+                
+                const row = `
+                    <tr>
+                        <td>${partType}</td>
+                        <td>${aircraftType}</td>
+                        <td>${info.quantity}</td>
+                        <td>
+                            <span class="badge ${classes.bgClass}">
+                                ${info.status_display}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                rows.push(row);
+            });
+        });
+        
+        if (rows.length > 0) {
+            tbody.html(rows.join(''));
+        } else {
+            tbody.html('<tr><td colspan="4" class="text-center">No inventory data available.</td></tr>');
+        }
+    });
+}
+
+function updateAircraftList() {
+    $.get("{% url 'aircrafts:aircraft-list' %}", function(data) {
+        const tbody = $('#recentAircraftTable tbody');
+        tbody.empty();
+        
+        if (data.length > 0) {
+            data.forEach(function(aircraft) {
+                const row = `
+                    <tr>
+                        <td>
+                                ${aircraft.serial_number}
+                        </td>
+                        <td>${aircraft.aircraft_type_display}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        } else {
+            tbody.html('<tr><td colspan="4" class="text-center">No aircraft found.</td></tr>');
+        }
+    }).fail(function(xhr) {
+        if (xhr.status === 403) {
+            const tbody = $('#recentAircraftTable tbody');
+            tbody.html(`
+                <tr>
+                    <td colspan="3" class="text-center p-3">
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aircraft list is only accessible by assembly team members.
+                        </div>
+                    </td>
+                </tr>
+            `);
+            $('#recentAircraftTable').closest('.card').find('.btn-primary').hide();
+        }
+    });
+}
+
+$(document).ready(function() {
+    updateInventoryAlerts();
+    updateAircraftList();
+    updatePartsInventory();
+    
+    setInterval(function() {
+        updateInventoryAlerts();
+        updateAircraftList();
+        updatePartsInventory();
+    }, 30000);
+});
+</script>
+
+<style>
+#inventoryAlerts ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#inventoryAlerts li {
+    margin-bottom: 0.5rem;
+}
+
+#inventoryAlerts li:last-child {
+    margin-bottom: 0;
+}
+</style>
+{% endblock %} 
