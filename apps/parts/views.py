@@ -90,14 +90,16 @@ class PartDetailView(generics.RetrieveUpdateDestroyAPIView):
         return queryset
     
     def perform_destroy(self, instance):
-
         if not hasattr(self.request.user, 'personnel'):
             raise PermissionDenied("User does not have associated personnel")
         
-        result = PartService.recycle_part(instance.id, self.request.user.personnel)
-        
-        if not result:
-            raise NotFound("Part not found or cannot be recycled")
+        try:
+            result = PartService.recycle_part(instance.id, self.request.user.personnel)
+            if not result:
+                raise NotFound("Part not found or cannot be recycled")
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValidationError as e:
+            raise PermissionDenied(str(e))
 
 
 @extend_schema(tags=["Inventory"])
@@ -130,7 +132,6 @@ class InventoryListView(generics.ListAPIView):
 
 @extend_schema(tags=["Inventory"])
 class InventorySummaryView(APIView):
-    """Get inventory summary by aircraft type"""
 
     def get(self, request):
         summary = {}

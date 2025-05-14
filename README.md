@@ -10,6 +10,7 @@ Bu proje, uçak parçaları ve uçak üretim süreçlerinin yönetimi için geli
   - [Ortam Değişkenleri](#ortam-değişkenleri)
   - [Docker ile Kurulum](#docker-ile-kurulum)
   - [Manuel Kurulum](#manuel-kurulum)
+- [Testler](#-testler)
 - [API Dokümantasyonu](#-api-dokümantasyonu)
 
 ## 🚀 Özellikler
@@ -114,6 +115,17 @@ python manage.py runserver
 ```
 
 7. Tarayıcınızda `http://localhost:8000` adresine gidin
+
+
+## 🧪 Testler
+
+Projede yazılan testleri çalıştırmak için aşağıdaki komutları kullanabilirsiniz:
+
+### Tüm Testleri Çalıştırma
+```bash
+python manage.py test
+```
+
 
 ## 📚 API Dokümantasyonu
 
